@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Team A - Choose the music for studies</title>
+    <link rel='stylesheet' href="{{ url_for('static', filename='semantic.min.css') }}">
+    <link rel='stylesheet' href="{{ url_for('static', filename='main.css') }}">
+
+</head>
+<body id="soundcloud-player">
+
+<div class="ui container col">
+    <div class="col-left js-playlist">
+        <div class="inner"></div>
+    </div>
+    <div class="col-right">
+        <div class="main">
+            <div class="ui">Selected choice: {{ selected_choice }}</div>
+            <div class="ui massive icon input">
+                <!--<input type="text" placeholder="Search for a song or artist..." class="js-search input-search">-->
+                <form method="POST">
+
+                    <select id="subject-choice" name="subject-choice" style="margin-right: 5px">
+                        <option value="" disabled selected>Choose the subject</option>
+                        <option value="subjective-20">Python, R, SQL</option>
+                        <option value="subjective-40">Hadoop, Spark, Streaming</option>
+                        <option value="subjective-60">Machine Learning</option>
+                        <option value="subjective-80">Data Visualization</option>
+                        <option value="subjective-100">Ethics, Agile, Design Thinking </option>
+                    </select>
+
+                    <select id="despair-level" name="despair-level" style="margin-right: 5px">
+                        <option value="" disabled selected>How desperate are you?</option>
+                        <option value="very-low">I am ready!</option>
+                        <option value="low">Need to recap few concepts</option>
+                        <option value="average">I still have few more days</option>
+                        <option value="high">Proficiency is a good grade</option>
+                        <option value="very-high">God bless Gaussian curve at IE</option>
+                    </select>
+
+                    <select id="genre" name="genre" style="margin-right: 5px">
+                        <option value="" disabled selected>What genre?</option>
+                        <option value="Pop">Pop</option>
+                        <option value="Hip-Hop">Hip-Hop</option>
+                        <option value="Metal">Metal</option>
+                        <option value="Rock">Rock</option>
+                        <option value="Country">Country</option>
+                        <option value="Electronic">Electronic</option>
+                        <option value="Folk">Folk</option>
+                        <option value="Jazz">Jazz</option>
+                        <option value="R&B">R&B</option>
+                        <option value="Indie">Indie</option>
+                    </select>
+
+                    <input type="submit" value="Confirm my choices!" style="margin-right: 10px; text-align: center">
+                    <i class="search icon js-submit"></i>
+                </form>
+            </div>
+
+            <div class="search-results js-search-results ui cards">
+        
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://connect.soundcloud.com/sdk/sdk-3.3.2.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='semantic.min.js') }}"></script>
+<!--<script type="text/javascript" src="{{ url_for('static', filename='main.js') }}"></script>-->
+
+
+<script>
+/* 1. Search */
+
+var UI = {};
+
+UI.ClickIcon = function() {
+    document.querySelector('.js-submit').addEventListener('click', function(){
+
+        let songs = {{ songs|safe }};
+
+        console.log(songs);
+
+        songs.forEach(function(song){
+               SoundCloudAPI.getTrack(song);
+        });
+
+        //let input = document.querySelector('.js-search').value;
+        //SoundCloudAPI.getTrack(input);
+    });
+};
+
+UI.ClickIcon();
+
+/* 2. Query Soundcloud API */
+
+var SoundCloudAPI = {};
+
+SoundCloudAPI.init = function() {
+    SC.initialize({
+        client_id: 'cd9be64eeb32d1741c17cb39e41d254d'
+    });
+};
+SoundCloudAPI.init();
+
+SoundCloudAPI.getTrack = function(inputValue) {
+    SC.get('/tracks', {
+        q: inputValue,
+    }).then(function(tracks) {
+        SoundCloudAPI.renderTracks(tracks[0]);
+    });
+};
+
+/* 3. Display cards */
+SoundCloudAPI.renderTracks = function(track) {
+
+    // clean the page before inserting new cards
+    // document.querySelector('.js-search-results').innerHTML='';
+
+    //tracks.forEach(function(track){
+
+    let card = document.createElement("div");
+    card.classList.add("card");
+
+    // image sub-div
+    let imageDiv = document.createElement("div");
+    imageDiv.classList.add("image");
+    let image_img = document.createElement("img");
+    image_img.classList.add("image");
+    image_img.src = track.artwork_url || 'http://lorempixel.com/100/100/abstract';
+
+    imageDiv.appendChild(image_img);
+
+        // content
+    let contentDiv = document.createElement("div");
+    contentDiv.classList.add("content");
+
+    let headerDiv = document.createElement("div");
+    headerDiv.classList.add("header");
+    headerDiv.innerHTML = '<a href=' + track.permalink_url + ' target = "_blank">' + track.title + '</a>';
+
+    contentDiv.appendChild(headerDiv);
+
+        // button
+    let buttonDiv = document.createElement("div");
+    buttonDiv.classList.add("ui", "bottom", "attached", "button", "js-button");
+
+    let icon= document.createElement("i");
+    icon.classList.add("add", "icon");
+
+    let buttonText = document.createElement("span");
+    buttonText.innerHTML = "Add to playlist";
+
+    buttonDiv.appendChild(icon);
+    buttonDiv.appendChild(buttonText);
+    buttonDiv.addEventListener('click', function() {
+        SoundCloudAPI.embed(track.permalink_url);
+        });
+
+        // adding all sub-divs
+    card.appendChild(imageDiv);
+    card.appendChild(contentDiv);
+    card.appendChild(buttonDiv);
+
+
+    let searchResults = document.querySelector(".js-search-results");
+    searchResults.append(card);
+
+};
+
+/* 4. Add to playlist and play */
+SoundCloudAPI.embed = function(link) {
+    SC.oEmbed(link, {
+        auto_play: true
+    }).then(function (embed) {
+        let sideBar = document.querySelector('.js-playlist');
+        let box = document.createElement('div');
+
+        box.innerHTML = embed.html;
+        sideBar.insertBefore(box, sideBar.firstChild);
+        localStorage.setItem('key', sideBar.innerHTML);
+    })
+};
+
+let sideBar = document.querySelector('.js-playlist');
+sideBar.innerHTML = localStorage.getItem('key');
+
+
+</script>
+</body>
+</html>
