@@ -128,3 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 lyrics.csv
+
+# PyCharm + macOS
+.idea
+.DS_Store
